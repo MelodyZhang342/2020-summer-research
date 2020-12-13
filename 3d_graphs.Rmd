@@ -1,0 +1,6 @@
+
+
+# 3d Plots 
+
+In this R markdown file, I will generate a 3d plot to visualise a function of two variables.
+
