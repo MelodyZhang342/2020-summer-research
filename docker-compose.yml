@@ -5,7 +5,11 @@
       build:
         context: "."
       image: "jupyter/r-notebook:latest"
+      environment:
+        - "GRANT_SUDO=yes"
+      user: root 
       ports:
         - "8888:8888"
       volumes:
         - "./research:/home/jovyan/work"
+        - "/var/run/docker.sock:/var/run/docker.sock"
