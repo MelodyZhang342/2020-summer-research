@@ -1,0 +1,85 @@
+```{r}
+library(tidyverse)
+library(rayshader)
+```
+
+
+```{r}
+iris = read.csv("https://gist.githubusercontent.com/curran/a08a1080b88344b0c8a7/raw/0e7a9b0a5d22642a06d3d5b9bcbad9890c8ee534/iris.csv")
+
+iris %>% head()
+
+```
+```{r}
+# /71")
+install.packages("e1071")
+library(e1071)
+```
+
+```{r}
+x <- select(iris, petal_length, petal_width)
+y <- select(iris, species)
+
+# iris$species = 
+iris$species = c(rep(1, 50), rep(2, 50), rep(3, 50))  
+```
+
+```{r}
+svm_model <- svm(species ~ petal_length + petal_width, data=iris)
+summary(svm_model)
+
+predict(svm_model, iris[110,1:4])
+
+predict_flower = function(petal_length, petal_width){
+# petal_length = 1
+# petal_width = 2
+flower_hat = predict(svm_model, data.frame('petal_length' = petal_length, 'petal_width' = petal_width))
+return (flower_hat)
+}
+
+
+predict_flower(6, 2)
+
+```
+```{r}
+iris$id = 1:nrow(iris)
+p = iris %>%
+  ggplot(aes(x = petal_length, petal_width, col = as.character(species), text = id)) +
+  geom_point() #+ geom_point(aes(x = iris$petal_length[110], y = iris$petal_width[110]), col = 'red')+
+  scale_fill_gradientn(colors = rainbow(3))
+
+ggplotly(p)
+  # geom_point(aes(x = iris$petal_length[150], y = iris$petal_width[150]), col = 'red')
+```
+
+
+```{r}
+x = seq(0, 7, length.out = 70)
+y = seq(0, 2.5, length.out = 70)
+
+z = outer(x, y, FUN = predict_flower)
+
+z = as.data.frame(z)
+colnames(z) = y
+z$x = x 
+
+z_long = pivot_longer(z, cols = !x, names_to = "y", values_to = "z")
+
+
+p = z_long %>%
+  mutate(petal_length = as.numeric(x), petal_width = as.numeric(y)) %>%
+  ggplot(aes(x = petal_length, y = petal_width, fill = z )) +
+  geom_tile() +
+  scale_fill_gradientn(colors =  rainbow(3)) +
+  ggtitle("SVM Classification of Flower Type based on petal_width and petal_length")
+  
+plot_gg(p,multicore=TRUE,width=5,height=5,scale=250)
+# extrapolation vs interpolation 
+# how should i represent uncertainty surrounding extrapolation? 
+```
+
+
+```{r}
+```
+
+

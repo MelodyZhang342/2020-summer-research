@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(fields)
 ```
@@ -28,6 +28,18 @@ iris = read.csv("https://gist.githubusercontent.com/curran/a08a1080b88344b0c8a7/
 iris
 
 ```
+
+
+```{r}
+library(rayshader)
+
+p <- iris %>%
+  ggplot(aes(x = sepal_length, y = sepal_width)) +
+  geom_point()
+
+plot_gg(p)
+```
+
 
 ```{r}
 # Check the types of flowers
@@ -100,8 +112,8 @@ summarise(
 ```
 
 ```{r}
-x = seq(-3,3,length.out = 100)
-y = seq(-3,3,length.out = 100)
+x = seq(-1,1,length.out = 20)
+y = seq(-3,3,length.out = 20)
 
 c(length(x),length(y))
 
@@ -117,7 +129,7 @@ z = outer(
 class(z)
 dim(z) # z is a 100x100 matrix
 
-z
+# z
 
 # using ggplot - we must first convert the matix to a dataframe
 z = as.data.frame(z)
@@ -134,7 +146,7 @@ z$x = x
 z_long =pivot_longer(z, cols = as.character(y), names_to="y", values_to="z")
 
 # plotting
-ggplot(z_long,aes(x=x,y=as.numeric(y),fill=z,z=z))+
+p = ggplot(z_long,aes(x=x,y=as.numeric(y),fill=z,z=z))+
   geom_tile()+
   scale_fill_gradientn(colours=rainbow(4))+
   geom_hline(yintercept=0, col="red", linetype="dotted")+
@@ -142,8 +154,9 @@ ggplot(z_long,aes(x=x,y=as.numeric(y),fill=z,z=z))+
   geom_contour()
 
 library(plotly)
+library(rayshader)
 
-
+plot_gg(p,multicore=TRUE,width=5,height=5,scale=250)
 ```
 
 
@@ -202,6 +215,21 @@ ggplot(data=z_random_long, aes(x=day,y=desc(as.numeric(hour)),col=z))+
 
 
 
+# Test
+```{r}
+getOption("rgl.useNULL")
+options(rgl.useNULL=TRUE)
+example("plot3d", "rgl")
+widget <- rglwidget()
+if (interactive())
+  widget
+  
+
+# Save it to a file.  This requires pandoc
+filename <- tempfile(fileext = ".html")
+htmlwidgets::saveWidget(rglwidget(), filename)
+browseURL(filename)
+```
 
 
 
