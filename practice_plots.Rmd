@@ -1,0 +1,210 @@
+---
+title: "plots"
+author: "Melody Zhang 366925544"
+date: "12/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(fields)
+```
+
+ggplots:
+
+data
+aestatics
+geometries
+facets
+statisticts
+coordinates
+themes
+
+
+```{r}
+iris = read.csv("https://gist.githubusercontent.com/curran/a08a1080b88344b0c8a7/raw/0e7a9b0a5d22642a06d3d5b9bcbad9890c8ee534/iris.csv")
+
+iris
+
+```
+
+```{r}
+# Check the types of flowers
+table(iris$species)
+
+# Number of rows in our dataset
+nrow(iris) # 3 types of 150 flowers
+
+
+# plot the relationship between sepal length and sepal width
+# first inspect our data
+colnames(iris)
+data = dplyr::select(iris,sepal_length,sepal_width)
+?dplyr::select
+
+ggplot(data=data,aes(x=sepal_length, y=sepal_width)) +
+  geom_point()
+
+# equivalent code (here we declare the data and the aesthetic mapping within the geometry)
+# useful if want to add data to plot, but the data has a different dimension to the original dataset
+ggplot()+
+  geom_point(data=data,aes(x=sepal_length,y=sepal_width))+
+  geom_point(aes(x=8,y=4.5),col="blue") # adding a single observation to our scatter plot
+```
+
+```{r}
+data2 = iris %>% select(sepal_length,sepal_width, species) # pipe operator (equivalent code selecting data frame)
+p = ggplot(data=data2,aes(x=sepal_length,y=sepal_width,col=species,shape=species))+
+  geom_point()
+  
+p + ggtitle("Sepal width vs Sepal length given flower species")+
+  geom_hline(yintercept = mean(data2$sepal_width))+
+  geom_vline(xintercept = 5, linetype="dotted", col="red",size=1)
+
+# select only setosa flowers -> two ways
+# 1) Base R
+filt = data2$species == "setosa" # return a vector of FALSES and TRUES
+data2[filt,]# only returns setosa flowers (TRUE) using filt
+data2[!filt,"species"]# Return non-setosa flowers, and only select the species to column
+
+filt = c(TRUE,FALSE,TRUE)
+c(0,1,2)
+c(0,1,2)[filt]
+
+
+# 2) Tidyverse R
+data2 %>%
+  filter(species=="setosa")
+
+# to get mean sepal length for setosa flowers
+setosa_mean = data2$sepal_length[data$species=="setosa"] %>% mean()
+
+
+p + geom_vline(xintercept=setosa_mean,col="red") +
+  #geom_text(aes(x=setosa_mean,y=2.5,label="setosa mean sepal lehth",col="red")) 
+  # If using an aesthetic mapping, the mapping will be added to the legend, color will change and adds a new text to legend
+  geom_text(x=setosa_mean,y=2.5,label="setosa mean sepal lehth",col="red")
+
+
+# aggregation of data
+iris %>%
+  group_by(species) %>%
+summarise(
+  number_of_flowers =n(),
+  mean_sepal_length = mean(sepal_length),
+  median_sepal_width = median(sepal_width),
+  sepal_length_gt_5.5 = sum(sepal_length>5.5)/n()
+)
+
+```
+
+```{r}
+x = seq(-3,3,length.out = 100)
+y = seq(-3,3,length.out = 100)
+
+c(length(x),length(y))
+
+# the out function is similar to the outer product
+# we should get a matrix with dimension length(x) * length(y), i.e. (100x100)
+
+z = outer(
+  x,
+  y,
+  function(x,y) 0.1*cos(x)+0.1*sin(y) # creating a matrix z with a function value defined
+  ) 
+
+class(z)
+dim(z) # z is a 100x100 matrix
+
+z
+
+# using ggplot - we must first convert the matix to a dataframe
+z = as.data.frame(z)
+class(z)
+
+# Rename columns, from y_1 to y_N
+colnames(z) = y
+
+# adding a new column x - we need this for pivotting
+# think of it as transferring rows x into an addional column x=x1,x2,x3,...
+z$x = x
+
+## next we pivot it longer
+z_long =pivot_longer(z, cols = as.character(y), names_to="y", values_to="z")
+
+# plotting
+ggplot(z_long,aes(x=x,y=as.numeric(y),fill=z,z=z))+
+  geom_tile()+
+  scale_fill_gradientn(colours=rainbow(4))+
+  geom_hline(yintercept=0, col="red", linetype="dotted")+
+  geom_vline(xintercept=0, col="red",linetype="dotted")+
+  geom_contour()
+
+library(plotly)
+
+
+```
+
+
+
+
+
+```{r geom_tile example}
+# geom_tile
+# Example - Calendar Heatmap for 24 hours of 31 days
+
+my_dates =  seq(as.Date("2020-01-01"),as.Date("2020-01-31"),length.out=31)
+my_hours = seq(0,23,1)
+
+# Generate some random values
+z_random = outer(my_dates,my_hours,function(my_dates,my_hours) rnorm(n=length(my_dates),mean=0,sd=1))
+dim(z_random)
+
+z_random = as.data.frame(z_random)
+colnames(z_random) = my_hours
+
+z_random$day <- my_dates # addding a new column of dates
+
+## or equivalently
+## z_random = z_random %>%
+##  mutate(day=my_dates) # Each row represents one day
+
+# ggplot expects data to be in long format
+z_random_long = z_random %>%
+  pivot_longer(cols =seq(1,24),names_to="hour",values_to="z") # pivotting longer
+
+ggplot(data=z_random_long, aes(x=day,y=desc(as.numeric(hour)),fill=z))+
+  geom_tile()+
+  scale_fill_gradientn(colours=rainbow(4))+
+  scale_fill_gradientn(colours=c("#FF0000","#80FF00")) # red to green
+  
+# compare using col and fill; depends on graph types
+ggplot(data=z_random_long, aes(x=day,y=desc(as.numeric(hour)),col=z))+
+  geom_tile()+
+  scale_colour_gradientn(colours=c("#FF0000","#80FF00")) # here it colours the outline of each tile, not filling each tile
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
